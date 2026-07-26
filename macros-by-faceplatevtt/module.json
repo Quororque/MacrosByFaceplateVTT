@@ -1,0 +1,29 @@
+{
+  "id": "macros-by-faceplatevtt",
+  "title": "Macros by FaceplateVTT",
+  "description": "Macros and rollable tables used in FaceplateVTT games.",
+  "version": "1.0.0",
+  "compatibility": {
+    "minimum": "14",
+    "verified": "14"
+  },
+  "authors": [
+    {
+      "name": "Quororque"
+    }
+  ],
+  "packs": [
+    {
+      "name": "faceplatevtt-macros",
+      "label": "FaceplateVTT Macros",
+      "path": "packs/faceplatevtt-macros",
+      "type": "Macro"
+    },
+    {
+      "name": "faceplatevtt-roll-tables",
+      "label": "FaceplateVTT Roll Tables",
+      "path": "packs/faceplatevtt-roll-tables",
+      "type": "RollTable"
+    }
+  ]
+}
