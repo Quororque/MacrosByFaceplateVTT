@@ -1,0 +1,74 @@
+{
+  "deltagreen": {
+    "sources": {
+      "Lighter X": {
+        "type": "equipment",
+        "consumable": false,
+        "light": {
+          "bright": 1,
+          "dim": 2,
+          "angle": 360,
+          "color": "#FFB347",
+          "coloration": 0,
+          "alpha": 0.20
+        }
+      },
+      "Lantern X": {
+        "type": "equipment",
+        "consumable": false,
+        "light": {
+          "bright": 6,
+          "dim": 12,
+          "angle": 360,
+          "color": "#FFD8A8",
+          "coloration": 0,
+          "alpha": 0.12
+        }
+      },
+      "Night-vision Goggles X": {
+        "type": "equipment",
+        "consumable": false,
+        "vision": {
+          "enabled": true,
+          "range": 25,
+          "angle": 40,
+          "mode": "basic"
+        }
+      },
+      "Panoramic Night-vision Goggles X": {
+        "type": "equipment",
+        "consumable": false,
+        "vision": {
+          "enabled": true,
+          "range": 25,
+          "angle": 97,
+          "mode": "basic"
+        }
+      },
+      "Flashlight (Compact) X": {
+        "type": "equipment",
+        "consumable": false,
+        "light": {
+          "bright": 15,
+          "dim": 20,
+          "angle": 25,
+          "color": "#E8DEC4",
+          "coloration": 0,
+          "alpha": 0.10
+        }
+      },
+      "Flashlight (Maglite) X": {
+        "type": "equipment",
+        "consumable": false,
+        "light": {
+          "bright": 10,
+          "dim": 18,
+          "angle": 35,
+          "color": "#FFD6A3",
+          "coloration": 0,
+          "alpha": 0.15
+        }
+      }
+    }
+  }
+}
