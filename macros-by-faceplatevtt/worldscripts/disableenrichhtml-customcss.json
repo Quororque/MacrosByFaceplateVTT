@@ -1,0 +1,25 @@
+
+/* ===========================
+   Hide chat formatting toolbar
+   =========================== */
+
+prose-mirror.chat .editor-menu,
+prose-mirror.chat menu,
+prose-mirror.chat .prosemirror-menu,
+.chat-form .editor-menu,
+.chat-form menu,
+.chat-form .prosemirror-menu,
+.chat-resizer-host .menu-container {
+    display: none !important;
+}
+
+/* Remove the space left behind */
+.chat-resizer-host .editor-container {
+    flex: 1 1 auto !important;
+}
+
+prose-mirror.chat,
+prose-mirror.chat-input.editor {
+    display: flex !important;
+    flex-direction: column !important;
+}
