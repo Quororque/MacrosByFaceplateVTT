@@ -2,7 +2,7 @@
   "id": "macros-by-faceplatevtt",
   "title": "Macros by FaceplateVTT",
   "description": "Macros and rollable tables used in FaceplateVTT games.",
-  "version": "1.0.1",
+  "version": "1.0.2",
   "compatibility": {
     "minimum": "14",
     "verified": "14"
