@@ -3,7 +3,7 @@
 DISABLE CHAT ENRICHMENT
 + ASTERISK FORMATTING
 + EMOJI SANITIZATION
-+ IMAGE EMBED BLOCKING
++ PASTED IMAGE BLOCKING
 
 Foundry VTT v14
 =========================================================
@@ -12,7 +12,7 @@ Disables:
 - Document-link enrichment
 - Embedded-document enrichment
 - Inline-roll enrichment
-- Pasted and embedded chat images
+- Clipboard-pasted chat images
 
 Adds:
 - *text*   → italics
@@ -24,8 +24,13 @@ Removes:
 - Emoji skin tones
 - Emoji keycaps
 - Joined emoji sequences
-- Clipboard-pasted images
-- HTML image embeds
+- Clipboard/data/blob images
+- Emoji image embeds
+
+Preserves:
+- Foundry/system/module images
+- Status-effect icons
+- Condition Lab icons
 
 Escape asterisks with a backslash:
 - \*literal asterisks\*
@@ -116,7 +121,8 @@ Hooks.once("ready", () => {
              * contains image data without usable text.
              *
              * Prevent it from entering ProseMirror.
-             * Rich copied text is allowed through and then
+             *
+             * Rich copied text is allowed through and is
              * sanitized again before message creation.
              */
             if (hasImage && !hasText) {
@@ -193,34 +199,66 @@ function sanitizeChatHTML(html) {
     let removedImages = false;
 
     /*
-     * Remove ordinary images, pasted screenshots,
-     * picture elements, SVG images, canvases, and common
-     * image-based embeds.
+     * Remove only images which came directly from pasted
+     * clipboard/browser data.
+     *
+     * IMPORTANT:
+     *
+     * Do NOT remove ordinary Foundry/module images.
+     * Status effects, system cards, module-generated
+     * icons, etc. generally use normal file paths and
+     * must survive.
      */
-    const imageElements =
+    const pastedImages =
         template.content.querySelectorAll(
             [
-                "img",
-                "picture",
-                "source",
-                "svg",
-                "canvas",
-                "input[type='image']",
-                "object[type^='image/']",
-                "embed[type^='image/']",
+                "img[src^='data:image/']",
+                "img[src^='blob:']",
+
+                "source[src^='data:image/']",
+                "source[src^='blob:']",
+
                 "object[data^='data:image/']",
-                "embed[src^='data:image/']"
+                "object[data^='blob:']",
+
+                "embed[src^='data:image/']",
+                "embed[src^='blob:']"
             ].join(",")
         );
 
-    for (const element of imageElements) {
+    for (const element of pastedImages) {
 
         removedImages = true;
+
         element.remove();
     }
 
     /*
-     * Remove image backgrounds pasted as inline styles.
+     * Remove explicit image-based emoji.
+     *
+     * Ordinary Foundry/module/status icons are not
+     * affected.
+     */
+    const emojiImages =
+        template.content.querySelectorAll(
+            [
+                "img.emoji",
+                "img[data-emoji]",
+                "[data-emoji]"
+            ].join(",")
+        );
+
+    for (const element of emojiImages) {
+
+        removedImages = true;
+
+        element.remove();
+    }
+
+    /*
+     * Remove pasted data/blob background images while
+     * preserving ordinary Foundry/module background
+     * images.
      */
     const styledElements =
         template.content.querySelectorAll(
@@ -230,11 +268,15 @@ function sanitizeChatHTML(html) {
     for (const element of styledElements) {
 
         const backgroundImage =
-            element.style?.backgroundImage;
+            element.style?.backgroundImage ?? "";
 
         if (
-            backgroundImage &&
-            backgroundImage !== "none"
+            backgroundImage.includes(
+                "data:image/"
+            ) ||
+            backgroundImage.includes(
+                "blob:"
+            )
         ) {
 
             removedImages = true;
@@ -245,6 +287,9 @@ function sanitizeChatHTML(html) {
         }
     }
 
+    /*
+     * Emoji sanitization applies to text nodes.
+     */
     const walker =
         document.createTreeWalker(
             template.content,
@@ -283,6 +328,7 @@ function sanitizeChatHTML(html) {
             sanitizedText !==
             textNode.nodeValue
         ) {
+
             textNode.nodeValue =
                 sanitizedText;
         }
@@ -316,14 +362,20 @@ function hasVisibleMessageContent(html) {
     }
 
     /*
-     * Images are deliberately absent from this list.
+     * Legitimate Foundry/module content may consist of
+     * images or other structural HTML.
      *
-     * Structural text content such as tables or rules may
-     * still remain valid.
+     * Clipboard data/blob images have already been
+     * stripped by sanitizeChatHTML().
      */
     return Boolean(
         template.content.querySelector(
             [
+                "img",
+                "picture",
+                "svg",
+                "video",
+                "audio",
                 "table",
                 "hr",
                 "blockquote"
@@ -385,6 +437,10 @@ function formatAsterisksInHTML(html) {
         }
     }
 
+    /*
+     * Replace nodes after completing the walk so DOM
+     * changes do not interfere with the TreeWalker.
+     */
     for (const textNode of textNodes) {
 
         textNode.replaceWith(
@@ -407,6 +463,9 @@ function formatAsteriskText(text) {
      *
      * **bold**
      * *italics*
+     *
+     * Opening and closing markers cannot be escaped.
+     * Formatted text cannot begin or end with whitespace.
      */
     const pattern =
         /(?<!\\)\*\*(?=\S)([^*\n]+?)(?<!\s)(?<!\\)\*\*|(?<!\\)\*(?=\S)([^*\n]+?)(?<!\s)(?<!\\)\*/g;
@@ -416,7 +475,9 @@ function formatAsteriskText(text) {
 
     function addPlainText(value) {
 
-        if (!value) return;
+        if (!value) {
+            return;
+        }
 
         fragment.append(
             document.createTextNode(
@@ -461,14 +522,18 @@ function formatAsteriskText(text) {
                 "*"
             );
 
-        fragment.append(element);
+        fragment.append(
+            element
+        );
 
         previousIndex =
             pattern.lastIndex;
     }
 
     addPlainText(
-        text.slice(previousIndex)
+        text.slice(
+            previousIndex
+        )
     );
 
     return fragment;
@@ -490,14 +555,18 @@ Hooks.on(
         /*
          * Process only messages created by this client.
          */
-        if (userId !== game.user.id) {
+        if (
+            userId !== game.user.id
+        ) {
             return;
         }
 
         /*
          * Leave system-generated roll cards untouched.
          */
-        if (message.isRoll) {
+        if (
+            message.isRoll
+        ) {
             return;
         }
 
@@ -505,7 +574,9 @@ Hooks.on(
             message.content;
 
         /*
-         * Remove images and emojis first.
+         * Remove pasted images and emojis first.
+         *
+         * Legitimate Foundry/module images survive.
          */
         const sanitized =
             sanitizeChatHTML(
@@ -521,8 +592,11 @@ Hooks.on(
             );
 
         /*
-         * Cancel empty messages created from only images,
-         * emojis, or whitespace.
+         * Cancel empty messages created from only pasted
+         * images, emojis, or whitespace.
+         *
+         * Legitimate Foundry/module image content is
+         * considered valid.
          */
         if (
             !hasVisibleMessageContent(
@@ -537,10 +611,12 @@ Hooks.on(
             return false;
         }
 
-        if (sanitized.removedImages) {
+        if (
+            sanitized.removedImages
+        ) {
 
             ui.notifications.warn(
-                "Embedded images were removed from the chat message."
+                "Pasted images or emojis were removed from the chat message."
             );
         }
 
@@ -558,5 +634,5 @@ Hooks.on(
 );
 
 console.log(
-    "Chat Formatting, Emoji Sanitization, and Image Blocking | Loaded."
+    "Chat Formatting, Emoji Sanitization, and Pasted Image Blocking | Loaded."
 );
