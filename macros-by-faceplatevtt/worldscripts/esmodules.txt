@@ -2,5 +2,6 @@
   "esmodules": [
     "scripts/purge-combat-initiative.js",
     "scripts/bleeding-tracker.js",
-    "scripts/disableenrichhtml.js"
+    "scripts/disableenrichhtml.js",
+    "scripts/autounpause.js"
   ],
